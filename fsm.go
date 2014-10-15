@@ -46,13 +46,19 @@ func (err ImpossibleStateError) Error() string {
 	return fmt.Sprintf("FSM in impossible state: %d", err)
 }
 
+type ClashingStateError int
+
+func (err ClashingStateError) Error() string {
+	return fmt.Sprintf("attempt to define FSM with clashing states. Index: %d", err)
+}
+
 // Define an FSM from a list of States.
 // Will panic if you try to use two states with the same index.
-func Define(states ...State) *FSM {
+func Define(states ...State) (*FSM, error) {
 	stateMap := map[int]State{}
 	for _, s := range states {
 		if _, ok := stateMap[s.Index]; ok {
-			panic("Attempted to define FSM with clashing states.")
+			return nil, ClashingStateError(s.Index)
 		}
 		stateMap[s.Index] = s
 	}
@@ -60,7 +66,7 @@ func Define(states ...State) *FSM {
 	return &FSM{
 		states:  stateMap,
 		current: states[0].Index,
-	}
+	}, nil
 }
 
 // Spin the FSM one time.

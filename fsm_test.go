@@ -54,7 +54,10 @@ func TestStates(t *testing.T) {
 		},
 	}
 
-	fsm := Define(state1, state2, state3)
+	fsm, err := Define(state1, state2, state3)
+	if err != nil {
+		t.Fatal("Failed to define FSM: ", err)
+	}
 
 	t.Log("1: 1 -> 2")
 	assertState(t, fsm, test_input_1, test_state_2)
@@ -108,7 +111,10 @@ func TestChain(t *testing.T) {
 		},
 	}
 
-	fsm := Define(state1, state2, state3)
+	fsm, err := Define(state1, state2, state3)
+	if err != nil {
+		t.Fatal("Failed to define FSM: ", err)
+	}
 
 	// Spin with input 1.
 	// The state chain should go 1 -> 2 -> 1 -> 3 and all 3 functions should have been hit.
@@ -134,11 +140,14 @@ func TestImpossibleState(t *testing.T) {
 		},
 	}
 
-	fsm := Define(state1, state2)
+	fsm, err := Define(state1, state2)
+	if err != nil {
+		t.Fatal("Failed to define FSM: ", err)
+	}
 
 	// Put the FSM in an impossible state.
 	fsm.current = test_state_3
-	err := fsm.Spin(test_input_1)
+	err = fsm.Spin(test_input_1)
 	if err == nil {
 		t.Fatalf("FSM didn't error when spun in impossible state.")
 	}
@@ -166,10 +175,13 @@ func TestInvalidInput(t *testing.T) {
 		},
 	}
 
-	fsm := Define(state1, state2)
+	fsm, err := Define(state1, state2)
+	if err != nil {
+		t.Fatal("Failed to define FSM: ", err)
+	}
 
 	// Spin with invalid input value.
-	err := fsm.Spin(test_input_3)
+	err = fsm.Spin(test_input_3)
 	if err == nil {
 		t.Fatalf("FSM didn't error when spun with invalid input.")
 	}
@@ -181,8 +193,8 @@ func TestInvalidInput(t *testing.T) {
 	}
 }
 
-// Test that we panic if you try to define an invalid FSM.
-func TestClashPanic(t *testing.T) {
+// Test that we error if you try to create an FSM with clashing states.
+func TestStateClash(t *testing.T) {
 	// Define two states with the same index.
 	state1 := State{
 		Index: test_state_1,
@@ -199,15 +211,16 @@ func TestClashPanic(t *testing.T) {
 		},
 	}
 
-	defer func() {
-		if err := recover(); err != nil {
-			t.Logf("Correctly panicked with error: %v", err)
-		}
-	}()
+	// We should error on this define.
+	_, err := Define(state1, state2)
 
-	// We should panic on this define.
-	Define(state1, state2)
-
-	// If we got to here, the test has failed!
-	t.Fatalf("Didn't panic when creating impossible FSM")
+	if err == nil {
+		t.Fatalf("Didn't error creating FSM with clashing states.")
+	}
+	switch err.(type) {
+	case ClashingStateError:
+		t.Log("FSM corrently returned error: %v", err.Error())
+	default:
+		t.Fatalf("FSM returned wrong error type: %T", err)
+	}
 }
