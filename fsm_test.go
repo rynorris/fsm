@@ -180,3 +180,34 @@ func TestInvalidInput(t *testing.T) {
 		t.Fatalf("FSM returned wrong error type: %T", err)
 	}
 }
+
+// Test that we panic if you try to define an invalid FSM.
+func TestClashPanic(t *testing.T) {
+	// Define two states with the same index.
+	state1 := State{
+		Index: test_state_1,
+		Outcomes: map[Input]Outcome{
+			test_input_1: Outcome{test_state_2, NO_ACTION},
+			test_input_2: Outcome{test_state_3, NO_ACTION},
+		},
+	}
+	state2 := State{
+		Index: test_state_1,
+		Outcomes: map[Input]Outcome{
+			test_input_1: Outcome{test_state_1, NO_ACTION},
+			test_input_2: Outcome{test_state_1, NO_ACTION},
+		},
+	}
+
+	defer func() {
+		if err := recover(); err != nil {
+			t.Logf("Correctly panicked with error: %v", err)
+		}
+	}()
+
+	// We should panic on this define.
+	Define(state1, state2)
+
+	// If we got to here, the test has failed!
+	t.Fatalf("Didn't panic when creating impossible FSM")
+}

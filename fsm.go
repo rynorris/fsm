@@ -47,9 +47,13 @@ func (err ImpossibleStateError) Error() string {
 }
 
 // Define an FSM from a list of States.
+// Will panic if you try to use two states with the same index.
 func Define(states ...State) *FSM {
 	stateMap := map[int]State{}
 	for _, s := range states {
+		if _, ok := stateMap[s.Index]; ok {
+			panic("Attempted to define FSM with clashing states.")
+		}
 		stateMap[s.Index] = s
 	}
 
