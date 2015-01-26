@@ -1,7 +1,6 @@
-/*
- * General Purpose FSM library.
- *
- */
+//
+// General Purpose FSM library.
+//
 package fsm
 
 import (
